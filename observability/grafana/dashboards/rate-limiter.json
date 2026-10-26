@@ -1,0 +1,85 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "Accepted vs Rejected Requests Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus-ds" },
+      "targets": [
+        {
+          "expr": "sum(rate(rate_limit_accepted_total[1m]))",
+          "legendFormat": "Accepted/s"
+        },
+        {
+          "expr": "sum(rate(rate_limit_rejected_total[1m]))",
+          "legendFormat": "Rejected (429)/s"
+        }
+      ]
+    },
+    {
+      "title": "Rejection Ratio (%)",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus-ds" },
+      "targets": [
+        {
+          "expr": "(sum(rate(rate_limit_rejected_total[1m])) / clamp_min(sum(rate(rate_limit_rejected_total[1m])) + sum(rate(rate_limit_accepted_total[1m])), 1)) * 100",
+          "legendFormat": "Rejection %"
+        }
+      ]
+    },
+    {
+      "title": "HTTP 429 Status Count Over Time",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus-ds" },
+      "targets": [
+        {
+          "expr": "sum(increase(http_server_request_duration_seconds_count{http_response_status_code=\"429\"}[5m]))",
+          "legendFormat": "429 Total (5m)"
+        }
+      ]
+    },
+    {
+      "title": "API Latency Under Rejection Pressure",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus-ds" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds_bucket{http_response_status_code=\"429\"}[1m])) by (le))",
+          "legendFormat": "429 p95 Latency"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds_bucket{http_response_status_code=\"200\"}[1m])) by (le))",
+          "legendFormat": "200 p95 Latency"
+        }
+      ]
+    },
+    {
+      "title": "Rejections by Active Policy",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus-ds" },
+      "targets": [
+        {
+          "expr": "sum(rate(rate_limit_rejected_total[1m])) by (policy)",
+          "legendFormat": "Policy: {{policy}}"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "tags": ["monolith", "rate-limiter"],
+  "time": { "from": "now-15m", "to": "now" },
+  "title": "Dashboard B: Rate Limiter",
+  "uid": "monolith-rate-limiter"
+}

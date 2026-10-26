@@ -1,0 +1,65 @@
+groups:
+  - name: monolith_api_alerts
+    rules:
+      - alert: SustainedApi5xxErrorRateHigh
+        expr: (sum(rate(http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[2m])) / clamp_min(sum(rate(http_server_request_duration_seconds_count[2m])), 1)) * 100 > 5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sustained high 5xx error rate on Monolith API"
+          description: "API 5xx errors represent {{ $value | printf \"%.2f\" }}% of all requests over the last 2 minutes."
+
+      - alert: ApiP95LatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds_bucket[2m])) by (le)) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API p95 latency exceeds 500ms"
+          description: "API p95 latency is {{ $value | printf \"%.3f\" }}s over the last 2 minutes."
+
+      - alert: ApiTargetDown
+        expr: up{job="monolith-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Monolith API target is down"
+          description: "Prometheus has been unable to scrape the Monolith API target for over 1 minute."
+
+      - alert: PostgresTargetDown
+        expr: up{job="postgres-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL exporter target is down"
+          description: "Prometheus has been unable to scrape PostgreSQL exporter for over 1 minute."
+
+      - alert: DatabaseConnectionsApproachingMax
+        expr: (pg_stat_activity_count / 100) * 100 > 85
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL connections approaching maximum pool"
+          description: "Active database connections are above 85% of configured limit (current count: {{ $value }})."
+
+      - alert: HighRateLimitRejectionRate
+        expr: (sum(rate(rate_limit_rejected_total[5m])) / clamp_min(sum(rate(rate_limit_rejected_total[5m])) + sum(rate(rate_limit_accepted_total[5m])), 1)) * 100 > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High rate limiter rejection rate"
+          description: "Rate limiter rejections account for {{ $value | printf \"%.2f\" }}% of requests over the last 5 minutes."
+
+      - alert: HighProcessCpuUsage
+        expr: process_cpu_usage > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API process CPU utilization"
+          description: "API process CPU usage has exceeded 85% for 5 minutes."

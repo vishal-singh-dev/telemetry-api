@@ -1,0 +1,29 @@
+include:
+  - docker-compose.yml
+
+services:
+  # In proxy mode, remove the direct port mapping from the API so all external traffic must traverse Nginx
+  api:
+    ports: !override []
+    expose:
+      - "8080"
+
+  nginx:
+    image: nginx:1.25-alpine
+    
+    container_name: nginx-proxy
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "127.0.0.1:8000:80"
+    networks:
+      - observability-net
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health/live || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped

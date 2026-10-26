@@ -1,0 +1,28 @@
+# Build and compilation outputs
+bin/
+obj/
+*.dll
+*.pdb
+*.exe
+
+# Environment configuration
+.env
+*.env.local
+
+# IDE and tooling
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Test outputs
+TestResults/
+coverage/
+
+# Docker volumes and data
+data/
+*.log
+.claude
